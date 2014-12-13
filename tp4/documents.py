@@ -1,3 +1,4 @@
+import math
 import os
 import time
 import re
@@ -23,6 +24,35 @@ class Document:
         terms = re.findall(r"[\w']+", ' '.join([self.title, self.body]))
         stopwords = get_reuters_stopwords()
         return Counter([term for term in terms if term not in stopwords])
+
+    def term_frequency(self, term):
+        """Retourne la fréquence d'un terme donné dans le document"""
+        terms = self.terms()
+        total = sum(terms.values())
+
+        return 0.5 + (0.5 * terms[term] / total) / (max(terms.values()) / total)
+
+    def inverse_document_frequency(self, term, documents):
+        documents_with_term = [document for document in documents if term in document.terms()]
+        return math.log(len(documents) / (1 + len(documents_with_term)))
+        pass
+
+    def tfidf(self, term, documents):
+        return self.term_frequency(term) * self.inverse_document_frequency(term, documents)
+
+    def pounded_terms(self, documents):
+        """
+        Retourne un dictionnaire où la clé et un terme et la valeur le poids du
+        terme dans le document
+        """
+        return {term: self.tfidf(term, documents) for term in self.terms()}
+
+    def __cmp__(self, other):
+        """
+        Compare ce document avec un autre document afin de pouvoir trier une 
+        liste de documents.
+        """
+        pass
 
 def get_reuters_stopwords():
     """Retourne une liste de stopwords"""

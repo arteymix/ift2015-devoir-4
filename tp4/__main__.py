@@ -5,3 +5,5 @@ stopwords = get_reuters_stopwords()
 
 for document in documents:
     print(document.terms())
+
+print(documents[0].pounded_terms(documents))
