@@ -1,101 +1,52 @@
 import os
+import time
 import re
 from collections import Counter
-from lxml import etree
+from lxml.etree import XMLParser, parse
+import glob
+from pkgutil import get_data
 
-from stopwords import ReuterStopwords
+# utilise un parser « safe »
+parser = XMLParser(recover=True)
 
-
-DEFAULT_STOPWORDS = ReuterStopwords()
-
-
-def start_tag(name):
-    return '<%s>' % name
-
-def end_tag(name):
-    return '</%s>' % name
+def get_reuters_stopwords():
+    """Retourne une liste de stopwords"""
+    root = parse(os.path.join(os.path.dirname(__file__), 'data/stopwords.xml'), parser)
+    return [word.text for word in root.iter('word')]
 
 class Document:
+    """Représente un document"""
+    def __init__(self, title, body):
+        self.title = title
+        self.body = body
 
-    def __init__(self, title, text):
-        self._title = title
-        self._text = text
+    def terms(self):
+        """
+        Retourne les termes du document sous forme d'un Counter en excluant les
+        stopwords
+        """
+        terms = re.findall(r"[\w']+", self.body)
+        stopwords = get_reuters_stopwords()
+        return Counter([term for term in terms if term not in stopwords])
 
-    def title(self):
-        return self._title
+def get_reuters_documents():
+    """Fetch all Reuteurs document and return a list of Document objects."""
 
-    def text(self):
-        return self._text
+    # on utilise glob pour trouver tous les documents reuters
+    files = glob.glob(os.path.join(os.path.dirname(__file__), 'data/reuters21578/reut2-*.sgm'))
 
-class DocumentTerms():
-
-    def __init__(self, document, stopwords=DEFAULT_STOPWORDS):
-        self._doc = document
-        self._terms = Counter([term.lower() for term
-                               in re.findall(r"[\w']+", self._doc.text())
-                               if term not in stopwords])
-                
-    def document(self):
-        return self._doc
-
-    def __iter__(self):
-        return self._terms.items().__iter__()
-
-    def __len__(self):
-        return self._terms.__len__()
-            
-class Documents:    
-
-    def __init__(self, documents):
-        self._docs = documents
-
-    def __getitem__(self, k):
-        return self._docs[k]
-
-    def __iter__(self):
-        return self._docs.__iter__()
-
-    def __len__(self):
-        return self._docs.__len__()
-
-class ReuterDocuments(Documents):
-
-    def __init__(self):
-        FOLDER = 'reuters21578-2'
-
-        '''The files we'll read: reut2-000.sgm, reut2-001.sgm, ..., reut2-021.sgm.'''
-        files = ['reut2-%03d.sgm' % i for i in range(0, 22)]
-
-        FIRST_TAG = 'REUTERS'
-        TEXT_TAG = 'TEXT'
-        TITLE_TAG = 'TITLE'
-        BODY_TAG = 'BODY'
-        
-        DUMMY_TAG = 'DUMMY'
-        dummy_start_tag = start_tag(DUMMY_TAG)
-        dummy_end_tag = end_tag(DUMMY_TAG)
-        
-        parser = etree.XMLParser(recover=True)
-        
-        docs = []
-        for f in files:            
-            with open(os.path.join(FOLDER, f), 'rb') as my_file:
-                xml = my_file.read().decode(errors='replace')
-            xml = xml[xml.find(FIRST_TAG)-1:]
-            xml = dummy_start_tag + xml + dummy_end_tag
-            
-            root = etree.fromstring(xml, parser=parser)
-            
-            file_docs = []
-            texts = list(root.iter(TEXT_TAG))
-            for text in texts:
-                title = text.find(TITLE_TAG)
-                body = text.find(BODY_TAG)
+    begin = time.time()
+    docs = []
+    for f in files:
+        with open(f, 'r') as my_file:
+            root = parse(my_file, parser)
+            for text in root.iter('TEXT'):
+                title = text.find('TITLE')
+                body = text.find('BODY')
                 if title is not None and body is not None:
-                    file_docs.append(Document(title.text, body.text))
+                    docs.append(Document(title.text, body.text))
+            else:
+                print('{} ne contient pas de texte.'.format(f))
 
-            print('%d documents read from %s.' % (len(file_docs), f))
-            docs.extend(file_docs)
-
-        print('A total of %d documents were read.' % len(docs))
-        super().__init__(docs)
+    print('Parsed {} documents from Reuters in {}s'.format(len(docs), time.time() - begin))
+    return docs
