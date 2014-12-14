@@ -5,7 +5,6 @@ import re
 from collections import Counter
 from lxml.etree import XMLParser, parse
 import glob
-from pkgutil import get_data
 
 # utilise un parser « safe »
 parser = XMLParser(recover=True)
@@ -16,24 +15,18 @@ class Document:
         self.title = title
         self.body = body
 
-    def terms(self):
-        """
-        Retourne les termes du document sous forme d'un Counter en excluant les
-        stopwords.
-        """
         terms = re.findall(r"[\w']+", ' '.join([self.title, self.body]))
         stopwords = get_reuters_stopwords()
-        return Counter([term for term in terms if term not in stopwords])
+        self.terms = Counter([term for term in terms if term.lower() not in stopwords])
 
     def term_frequency(self, term):
         """Retourne la fréquence d'un terme donné dans le document"""
-        terms = self.terms()
-        total = sum(terms.values())
+        total = sum(self.terms.values())
 
-        return 0.5 + (0.5 * terms[term] / total) / (max(terms.values()) / total)
+        return 0.5 + (0.5 * self.terms[term] / total) / (max(self.terms.values()) / total)
 
     def inverse_document_frequency(self, term, documents):
-        documents_with_term = [document for document in documents if term in document.terms()]
+        documents_with_term = [document for document in documents if term in document.terms]
         return math.log(len(documents) / (1 + len(documents_with_term)))
         pass
 
@@ -45,14 +38,14 @@ class Document:
         Retourne un dictionnaire où la clé et un terme et la valeur le poids du
         terme dans le document
         """
-        return {term: self.tfidf(term, documents) for term in self.terms()}
+        return {term: self.tfidf(term, documents) for term in self.terms}
 
     def __cmp__(self, other):
         """
-        Compare ce document avec un autre document afin de pouvoir trier une 
+        Compare ce document avec un autre document afin de pouvoir trier une
         liste de documents.
         """
-        pass
+        raise NotImplementedError
 
 def get_reuters_stopwords():
     """Retourne une liste de stopwords"""
