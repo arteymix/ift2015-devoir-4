@@ -11,9 +11,10 @@ parser = XMLParser(recover=True)
 
 class Document:
     """Représente un document"""
-    def __init__(self, title, body):
+    def __init__(self, title, body, date):
         self.title = title
         self.body = body
+        self.date = date
 
         terms = re.findall(r"[\w']+", ' '.join([self.title, self.body]))
         stopwords = get_reuters_stopwords()
@@ -25,12 +26,26 @@ class Document:
 
         return 0.5 + (0.5 * self.terms[term] / total) / (max(self.terms.values()) / total)
 
-    def inverse_document_frequency(self, term, documents):
+    @staticmethod
+    def inverse_document_frequency(term, documents):
+        """
+        Calcule la fréquence d'un terme dans les autres documents.
+
+        Le logarithme sert à mettre les données à l'échelle de term_frequency
+        dans la fonction tfidf.
+
+        Si le terme n'est pas dans aucun des documents, il va y avoir une
+        division par zéro.
+        """
         documents_with_term = [document for document in documents if term in document.terms]
-        return math.log(len(documents) / (1 + len(documents_with_term)))
-        pass
+        return math.log(len(documents) / len(documents_with_term))
 
     def tfidf(self, term, documents):
+        """
+        Calcul le tf-idf d'un terme pour un corpus de documents donné.
+
+        Donne une division par zéro si le terme n'est pas dans le corpus.
+        """
         return self.term_frequency(term) * self.inverse_document_frequency(term, documents)
 
     def pounded_terms(self, documents):
@@ -64,13 +79,21 @@ def get_reuters_documents():
     for f in files:
         with open(f, 'r') as my_file:
             root = parse(my_file, parser)
-            for text in root.iter('TEXT'):
-                title = text.find('TITLE')
-                body = text.find('BODY')
-                if title is not None and body is not None:
-                    docs.append(Document(title.text, body.text))
+            for reuters in root.iter('REUTERS'):
+                date = reuters.find('DATE')
+                text = reuters.find('TEXT')
+
+                # contenu du texte
+                if text is not None:
+                    dateline = text.find('DATELINE')
+                    title = text.find('TITLE')
+                    body = text.find('BODY')
+                    if title is not None and body is not None:
+                        docs.append(Document(title.text, body.text, date.text))
+                    else:
+                        print('Le document {} n\'est pas correctement formé'.format(reuters.text))
             else:
-                print('{} ne contient pas de texte.'.format(f))
+                print('{} ne contient pas de documents.'.format(f))
 
     print('Parsed {} documents from Reuters in {}s'.format(len(docs), time.time() - begin))
     return docs
