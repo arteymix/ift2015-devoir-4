@@ -25,38 +25,44 @@ while True:
 
     print('Termes de la recherche:', ', '.join(terms))
 
-    # ici, il faut construire un vecteur de recherche au lieu de montrer tous les documents
-    for term in terms:
+    # on assume que le tf de la requête vaut 1
+    try:
+        query_vector = {term: Document.inverse_document_frequency(term, documents) for term in terms}
+    except ZeroDivisionError:
+        print('Les termes {} ne sont pas dans le corpus des documents.'.format(', '.join(term)))
+        continue
+
+    print('Vecteur de la requête:', query_vector)
+
+    # on prend seulement les documents qui ont une intersection entre la requête et leurs termes
+    # on doit optimiser cette partie en triant les documents pour accélérer la recherche
+    documents_with_term = [document for document in documents if set(terms) & set(document.terms)]
+
+    for document in documents_with_term:
+        print('Vecteur du document {}:'.format(document.title), document.pounded_terms(documents))
+
+    while True:
+        for index, document in enumerate(documents_with_term):
+            print(index, document.title.lower().title())
+
+        print(len(documents_with_term), 'Quitter')
+
         try:
-            print('idf:', Document.inverse_document_frequency(term, documents))
-        except ZeroDivisionError:
-            print('Le terme {} n\'est pas dans le corpus des documents'.format(term))
+            index = int(input('# '))
+        except ValueError:
             continue
 
-        documents_with_term = [document for document in documents if term in document.terms]
+        if index == len(documents_with_term):
+            break
 
-        while True:
-            for index, document in enumerate(documents_with_term):
-                print(index, document.title.lower().title())
+        document = documents[index]
 
-            print(len(documents_with_term), 'Quitter')
+        print(document.title.lower().title().center(80))
+        print((len(document.title) * '-').center(80))
+        print('  ' + document.date.center(80), end='\n\n')
 
-            try:
-                index = int(input('# '))
-            except ValueError:
-                continue
+        paragraphs = document.body.split('    ')
 
-            if index == len(documents_with_term):
-                break
-
-            document = documents[index]
-
-            print(document.title.lower().title().center(80))
-            print((len(document.title) * '-').center(80))
-            print('  ' + document.date.center(80), end='\n\n')
-
-            paragraphs = document.body.split('    ')
-
-            for paragraph in paragraphs:
-                print('\n'.join(textwrap.wrap('  ' + paragraph, width=80)), end='\n\n')
+        for paragraph in paragraphs:
+            print('\n'.join(textwrap.wrap('  ' + paragraph, width=80)), end='\n\n')
 
