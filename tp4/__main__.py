@@ -35,18 +35,28 @@ while True:
 
         documents_with_term = [document for document in documents if term in document.terms]
 
-        for index, document in enumerate(documents_with_term):
-            print(index, document.title.lower().title())
+        while True:
+            for index, document in enumerate(documents_with_term):
+                print(index, document.title.lower().title())
 
-        index = int(input('# '))
-        document = documents[index]
+            print(len(documents_with_term), 'Quitter')
 
-        print(document.title.lower().title().center(80))
-        print((len(document.title) * '-').center(80))
-        print('  ' + document.date.center(80), end='\n\n')
+            try:
+                index = int(input('# '))
+            except ValueError:
+                continue
 
-        paragraphs = document.body.split('    ')
+            if index == len(documents_with_term):
+                break
 
-        for paragraph in paragraphs:
-            print('\n'.join(textwrap.wrap('  ' + paragraph, width=80)), end='\n\n')
+            document = documents[index]
+
+            print(document.title.lower().title().center(80))
+            print((len(document.title) * '-').center(80))
+            print('  ' + document.date.center(80), end='\n\n')
+
+            paragraphs = document.body.split('    ')
+
+            for paragraph in paragraphs:
+                print('\n'.join(textwrap.wrap('  ' + paragraph, width=80)), end='\n\n')
 
