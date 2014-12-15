@@ -26,6 +26,7 @@ class Document:
         self.date = date
         self.terms = Counter([w.lower() for w in self.word_regex.findall(' '.join([self.title, self.body]))])
 
+    @lru_cache()
     def term_frequency(self, term):
         """Retourne la fréquence d'un terme donné dans le document"""
         total = sum(self.terms.values())
@@ -42,8 +43,8 @@ class Document:
         Si le terme n'est pas dans aucun des documents, il va y avoir une
         division par zéro.
         """
-        documents_with_term = [document for document in documents if term in document.terms]
-        return math.log(len(documents) / len(documents_with_term))
+        matching_documents = [document for document in documents if term in document.terms]
+        return math.log(len(documents) / len(matching_documents))
 
     def tfidf(self, term, documents):
         """

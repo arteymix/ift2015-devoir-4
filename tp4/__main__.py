@@ -24,7 +24,7 @@ while True:
 
     terms = re.findall(r"[\w']+", query)
 
-    terms = list(set(terms) - set(stopwords))
+    terms = list(set(terms) - stopwords)
 
     if not terms:
         print('Aucun termes pertinents on été founi.')
@@ -82,10 +82,11 @@ while True:
             break
 
         try:
-            document = matching_documents[index]
+            ranking, document = matching_documents[index]
+
+            # présente le document avec le pager de pydoc
+            pydoc.pager(str(document))
+
         except IndexError:
             print('Votre choix doit être un nombre entre 0 et {} inclusivement.'.format(len(matching_documents)))
             continue
-
-        # présente le document avec le pager de pydoc
-        pydoc.pager(str(document))
