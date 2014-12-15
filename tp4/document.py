@@ -11,7 +11,7 @@ import glob
 def get_reuters_stopwords():
     """Retourne une liste de stopwords"""
     root = ElementTree.parse(os.path.join(os.path.dirname(__file__), 'data/stopwords.xml'))
-    return [word.text.lower() for word in root.iter('word')]
+    return set(word.text.lower() for word in root.iter('word'))
 
 class Document:
     """Représente un document"""
@@ -24,16 +24,11 @@ class Document:
         self.title = title
         self.body = body
         self.date = date
-
-        terms = self.word_regex.findall(self.title)
-        terms.extend(self.word_regex.findall(self.body))
-
-        self.terms = Counter([term.lower() for term in terms if term.lower() not in self.stopwords])
+        self.terms = Counter([w.lower() for w in self.word_regex.findall(' '.join([self.title, self.body]))])
 
     def term_frequency(self, term):
         """Retourne la fréquence d'un terme donné dans le document"""
         total = sum(self.terms.values())
-
         return 0.5 + (0.5 * self.terms[term] / total) / (max(self.terms.values()) / total)
 
     @staticmethod
