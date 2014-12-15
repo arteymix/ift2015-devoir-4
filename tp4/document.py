@@ -1,5 +1,6 @@
 import math
 import os
+import textwrap
 import time
 import re
 from collections import Counter
@@ -61,6 +62,20 @@ class Document:
         liste de documents.
         """
         raise NotImplementedError
+
+    def __str__(self):
+        # rendu du document
+        formatted_document = self.title.lower().title().center(80) + '\n'
+        formatted_document += (len(self.title) * '-').center(80) + '\n'
+        formatted_document += self.date.center(80) + '\n\n'
+
+        paragraphs = self.body.split('    ')
+
+        for paragraph in paragraphs:
+            formatted_document += '\n'.join(textwrap.wrap('  ' + paragraph, width=80))
+            formatted_document += '\n\n'
+
+        return formatted_document
 
 def get_reuters_stopwords():
     """Retourne une liste de stopwords"""

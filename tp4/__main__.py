@@ -1,68 +1,88 @@
+import itertools
+import numpy as np
+import pydoc
+import random
 import re
-import textwrap
+import time
 
 from document import Document, get_reuters_documents, get_reuters_stopwords
 
 documents = get_reuters_documents()
 stopwords = get_reuters_stopwords()
 
-print(', '.join(stopwords))
-
-for document in documents:
-    for term, count in sorted(document.terms.items()):
-        print('{}:\t{}'.format(count, term))
-
-for document in documents:
-    for term, count in sorted(document.pounded_terms(documents).items()):
-        print('{}:\t{}'.format(count, term))
-
-print('<CTRL-D> pour quitter.')
+print('{} documents chargés dans l\'index.'.format(len(documents)))
+print('Essayez', *random.choice(documents).terms)
+print('Une fois dans le pager, tapez sur « q » pour quitter.')
+print('Pour quitter la boucle interactive, appuyez sur « CTRL-D ».')
 
 while True:
-    query = input('? ')
+    try:
+        query = input('? ')
+    except EOFError:
+        print() # print a \n
+        break
 
     terms = re.findall(r"[\w']+", query)
 
-    print('Termes de la recherche:', ', '.join(terms))
+    if not terms:
+        print('Aucun terme fourni.')
+        continue
+
+    print('Termes de la recherche:', ', '.join(terms) + '.')
 
     # on assume que le tf de la requête vaut 1
     try:
         query_vector = {term: Document.inverse_document_frequency(term, documents) for term in terms}
     except ZeroDivisionError:
-        print('Les termes {} ne sont pas dans le corpus des documents.'.format(', '.join(term)))
+        print('Le(s) terme(s) {} ne sont pas dans le corpus des documents.'.format(', '.join(terms)))
         continue
-
-    print('Vecteur de la requête:', query_vector)
 
     # on prend seulement les documents qui ont une intersection entre la requête et leurs termes
     # on doit optimiser cette partie en triant les documents pour accélérer la recherche
+    begin = time.time()
     documents_with_term = [document for document in documents if set(terms) & set(document.terms)]
 
-    for document in documents_with_term:
-        print('Vecteur du document {}:'.format(document.title), document.pounded_terms(documents))
+    print('{} document(s) trouvé(s) en {}s.'.format(len(documents_with_term), time.time() - begin))
+
+    begin = time.time()
+    query_vector = np.array([query_vector[term] for term in terms])
+    documents_matrix = np.array([[document.pounded_terms(documents).get(term, 0) for term in terms] for document in documents_with_term])
+    print('Ranking calculés en {}s.'.format(time.time() - begin))
+
+    print('Vecteur de la requête:', query_vector, sep='\n')
+    print('Matrice des documents:', documents_matrix, sep='\n')
+
+    query_vector_norm = np.linalg.norm(query_vector)
+    documents_matrix_norm = np.linalg.norm(documents_matrix, axis=1)
+
+    # ranking listé par cosinus d'angle
+    ranking = np.divide(np.dot(documents_matrix, query_vector), np.multiply(documents_matrix_norm, query_vector_norm))
+
+    # trie du document le plus pertinent au moins pertinent
+    ordered_documents = sorted(zip(ranking, documents_with_term), key=lambda l: l[0], reverse=True)
 
     while True:
-        for index, document in enumerate(documents_with_term):
-            print(index, document.title.lower().title())
+        print('#', 'Ranking', 'Titre', sep='\t')
+        for index, (ranking, document) in enumerate(ordered_documents):
+            print(index, round(ranking, 5), document.title.lower().title(), sep='\t')
 
-        print(len(documents_with_term), 'Quitter')
+        print(len(documents_with_term), '-', 'Retour', sep='\t')
 
         try:
             index = int(input('# '))
         except ValueError:
+            print('Votre choix doit être un nombre.')
             continue
 
+        # l'utilisateur choisit « Retour »
         if index == len(documents_with_term):
             break
 
-        document = documents[index]
+        try:
+            document = documents_with_term[index]
+        except IndexError:
+            print('Votre choix doit être un nombre entre 0 et {} inclusivement.'.format(len(documents_with_term)))
+            continue
 
-        print(document.title.lower().title().center(80))
-        print((len(document.title) * '-').center(80))
-        print('  ' + document.date.center(80), end='\n\n')
-
-        paragraphs = document.body.split('    ')
-
-        for paragraph in paragraphs:
-            print('\n'.join(textwrap.wrap('  ' + paragraph, width=80)), end='\n\n')
-
+        # présente le document avec le pager de pydoc
+        pydoc.pager(str(document))
