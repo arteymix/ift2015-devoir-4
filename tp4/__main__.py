@@ -45,18 +45,19 @@ while True:
     print('{} document(s) trouvé(s) en {}s.'.format(len(documents_with_term), time.time() - begin))
 
     begin = time.time()
+
     query_vector = np.array([query_vector[term] for term in terms])
-    documents_matrix = np.array([[document.pounded_terms(documents).get(term, 0) for term in terms] for document in documents_with_term])
-    print('Ranking calculés en {}s.'.format(time.time() - begin))
+    documents_matrix = np.array([[(document.tfidf(term, documents) if term in document.terms else 0) for term in terms] for document in documents_with_term])
 
     print('Vecteur de la requête:', query_vector, sep='\n')
     print('Matrice des documents:', documents_matrix, sep='\n')
 
     query_vector_norm = np.linalg.norm(query_vector)
-    documents_matrix_norm = np.linalg.norm(documents_matrix, axis=1)
+    documents_matrix_norm = np.linalg.norm(documents_matrix)
 
     # ranking listé par cosinus d'angle
     ranking = np.divide(np.dot(documents_matrix, query_vector), np.multiply(documents_matrix_norm, query_vector_norm))
+    print('Ranking calculés en {}s.'.format(time.time() - begin))
 
     # trie du document le plus pertinent au moins pertinent
     ordered_documents = sorted(zip(ranking, documents_with_term), key=lambda l: l[0], reverse=True)

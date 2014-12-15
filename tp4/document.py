@@ -1,25 +1,34 @@
 import math
 import os
-import textwrap
 import time
 import re
+import textwrap
+from functools import lru_cache
 from collections import Counter
-from lxml.etree import XMLParser, parse
+from xml.etree import ElementTree
 import glob
 
-# utilise un parser « safe »
-parser = XMLParser(recover=True)
+def get_reuters_stopwords():
+    """Retourne une liste de stopwords"""
+    root = ElementTree.parse(os.path.join(os.path.dirname(__file__), 'data/stopwords.xml'))
+    return [word.text.lower() for word in root.iter('word')]
 
 class Document:
     """Représente un document"""
+    __slots__ = ['title', 'body', 'date', 'terms']
+
+    word_regex = re.compile(r"[\w']+")
+    stopwords = get_reuters_stopwords()
+
     def __init__(self, title, body, date):
         self.title = title
         self.body = body
         self.date = date
 
-        terms = re.findall(r"[\w']+", ' '.join([self.title, self.body]))
-        stopwords = get_reuters_stopwords()
-        self.terms = Counter([term for term in terms if term.lower() not in stopwords])
+        terms = self.word_regex.findall(self.title)
+        terms.extend(self.word_regex.findall(self.body))
+
+        self.terms = Counter([term.lower() for term in terms if term.lower() not in self.stopwords])
 
     def term_frequency(self, term):
         """Retourne la fréquence d'un terme donné dans le document"""
@@ -77,38 +86,30 @@ class Document:
 
         return formatted_document
 
-def get_reuters_stopwords():
-    """Retourne une liste de stopwords"""
-    root = parse(os.path.join(os.path.dirname(__file__), 'data/stopwords.xml'), parser)
-    return [word.text for word in root.iter('word')]
-
-
 def get_reuters_documents():
     """Fetch all Reuteurs document and return a list of Document objects."""
 
     # on utilise glob pour trouver tous les documents reuters
-    files = glob.glob(os.path.join(os.path.dirname(__file__), 'data/reuters21578/reut2-*.sgm'))
+    files = glob.glob(os.path.join(os.path.dirname(__file__), 'data/reuters21578/reut2-*.xml'))
 
     begin = time.time()
     docs = []
-    for f in files:
-        with open(f, 'r') as my_file:
-            root = parse(my_file, parser)
-            for reuters in root.iter('REUTERS'):
-                date = reuters.find('DATE')
-                text = reuters.find('TEXT')
+    for f in sorted(files):
+        with open(f, 'rb') as my_file:
+            print('Parsing ', f, '...', sep='', end=' ')
+            parser = ElementTree.iterparse(my_file)
+            for event, article in parser:
+                if article.tag in {'REUTERS', 'UNKNOWN'}:
+                    date = article.find('DATE')
+                    text = article.find('TEXT')
 
-                # contenu du texte
-                if text is not None:
-                    dateline = text.find('DATELINE')
-                    title = text.find('TITLE')
-                    body = text.find('BODY')
-                    if title is not None and body is not None:
-                        docs.append(Document(title.text, body.text, date.text))
-                    else:
-                        print('Le document {} n\'est pas correctement formé'.format(reuters.text))
-            else:
-                print('{} ne contient pas de documents.'.format(f))
+                    # contenu du texte
+                    if text is not None:
+                        title = text.find('TITLE')
+                        author = text.find('AUTHOR')
+                        body = text.find('BODY')
+                        docs.append(Document(title.text if title is not None else '', body.text if body is not None else '', date.text if date is not None else ''))
+        print('{}%'.format(round(len(docs) / 20578 * 100, 2)))
 
-    print('Parsed {} documents from Reuters in {}s'.format(len(docs), time.time() - begin))
+    print('Parsed all articles from Reuters in {}s.'.format(time.time() - begin))
     return docs
