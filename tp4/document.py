@@ -3,7 +3,6 @@ import os
 import time
 import re
 import textwrap
-from functools import lru_cache
 from collections import Counter
 from xml.etree import ElementTree
 import glob
@@ -26,7 +25,6 @@ class Document:
         self.date = date
         self.terms = Counter([w.lower() for w in self.word_regex.findall(' '.join([self.title, self.body]))])
 
-    @lru_cache()
     def term_frequency(self, term):
         """Retourne la fréquence d'un terme donné dans le document"""
         total = sum(self.terms.values())
