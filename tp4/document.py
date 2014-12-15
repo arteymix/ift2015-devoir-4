@@ -58,13 +58,6 @@ class Document:
         """
         return self.term_frequency(term) * self.inverse_document_frequency(term, documents)
 
-    def pounded_terms(self, documents):
-        """
-        Retourne un dictionnaire où la clé et un terme et la valeur le poids du
-        terme dans le document
-        """
-        return {term: self.tfidf(term, documents) for term in self.terms}
-
     def __cmp__(self, other):
         """
         Compare ce document avec un autre document afin de pouvoir trier une
