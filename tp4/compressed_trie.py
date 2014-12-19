@@ -1,3 +1,18 @@
+import time
+
+def make_trie_from_docs(doclist):
+    
+    begin = time.time()
+
+    c = Trie()
+    for doc in doclist:
+        for term in set(doc.terms):
+            c.add(term, doc)
+
+    print('Trie compressé avec tous les termes pertinents de documents créé en {}s.'.format(time.time() - begin))
+
+    return c
+
 #Compressed Prefix Tree
 class Trie:
     class Node:
@@ -68,21 +83,24 @@ class Trie:
         """Trouve cherche une clé récursivement depuis un noeud donné.
            Retourne False si l'élément n'est pas trouvé
         """
-        if node.key == key:
-            return node.value
+        if node.key == key :
+            if node.value != None:
+                return node.value
         else:
             for child in node.children:
                 p = child.matchPrefix(key)
                 if p == len(key):
-                    return child.value
+                    if child.value != None :
+                        return child.value
+                    else : break
                 elif p > 0:
                     return self._search(child, key[p:])
-        return False
+        return set()
 
         
     def __str__(self):
         return str(self.root)
-        
+"""        
 if __name__ == "__main__":
     t = Trie()
     t.add('asd', 27)
@@ -93,4 +111,4 @@ if __name__ == "__main__":
     t.add('asdehh', 20)
     t.add('ga', 20)
     t.add('gagasd', 2)
-    print(t)
+    print(t)"""

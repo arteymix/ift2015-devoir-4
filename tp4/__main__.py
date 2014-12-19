@@ -5,10 +5,14 @@ import random
 import re
 import time
 
+from compressed_trie import Trie, make_trie_from_docs 
 from document import Document, get_reuters_documents, get_reuters_stopwords
 
 documents = get_reuters_documents()
 stopwords = get_reuters_stopwords()
+comptrie = make_trie_from_docs(documents)
+
+
 
 print('{} documents chargés dans l\'index.'.format(len(documents)))
 print('Essayez un des termes suivants:', *random.choice(documents).terms)
@@ -31,18 +35,26 @@ while True:
         continue
 
     print('Termes de la recherche:', ', '.join(terms) + '.')
+    
+    begin = time.time()
+
+    # on va chercher dans le trie les documents qui contiennent les termes recherchés
+    docsearch_vector = {term: comptrie.search(term) for term in terms}
+    alldocs_len = len(documents)
 
     # on assume que le tf de la requête vaut 1
     try:
-        query_vector = {term: Document.inverse_document_frequency(term, documents) for term in terms}
+        query_vector = {term: Document.fast_idf(alldocs_len,len(docs)) for term,docs in docsearch_vector.items()}
     except ZeroDivisionError:
         print('Le(s) terme(s) {} ne sont pas dans le corpus des documents.'.format(', '.join(terms)))
         continue
 
     # on prend seulement les documents qui ont une intersection entre la requête et leurs termes
     # on doit optimiser cette partie en triant les documents pour accélérer la recherche
-    begin = time.time()
-    matching_documents = [document for document in documents if set(terms) & set(document.terms)]
+
+    matching_documents = set()
+    for doc in docsearch_vector.values():
+        matching_documents = matching_documents.union(doc)
 
     print('{} document(s) trouvé(s) en {}s.'.format(len(matching_documents), time.time() - begin))
 
@@ -57,8 +69,11 @@ while True:
     query_vector_norm = np.linalg.norm(query_vector)
     documents_matrix_norm = np.linalg.norm(documents_matrix)
 
+
+    a = np.dot(documents_matrix, query_vector)
+    b= np.multiply(documents_matrix_norm, query_vector_norm)
     # ranking listé par cosinus d'angle
-    ranking = np.divide(np.dot(documents_matrix, query_vector), np.multiply(documents_matrix_norm, query_vector_norm))
+    ranking = np.divide(a, b)
     print('Ranking calculés en {}s.'.format(time.time() - begin))
 
     # trie du document le plus pertinent au moins pertinent

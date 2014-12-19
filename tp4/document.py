@@ -46,6 +46,10 @@ class Document:
         matching_documents = [document for document in documents if term in document.terms]
         return math.log(len(documents) / len(matching_documents))
 
+    @staticmethod
+    def fast_idf(all_doc_nb,matching_doc_nb):
+        return math.log(all_doc_nb / matching_doc_nb)
+
     def tfidf(self, term, documents):
         """
         Calcul le tf-idf d'un terme pour un corpus de documents donné.
