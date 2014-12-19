@@ -1,20 +1,7 @@
+import string
 import time
 
 class Trie:
-    """Compressed Prefix Tree"""
-    @staticmethod
-    def from_documents(documents):
-        """Contruit un Trie depuis une liste de documents"""
-        begin = time.time()
-        c = Trie()
-        for doc in documents:
-            for term in doc.terms:
-                c.add(term, doc)
-
-        print('Trie compressé avec tous les termes pertinents de documents créé en {}s.'.format(time.time() - begin))
-
-        return c
-
     class Node:
         def __str__(self):
             return "{key: " + self.key + ", val: " + str(self.value) + ", children: (" + '; '.join(str(child) for child in self.children) + ")}"
@@ -69,13 +56,11 @@ class Trie:
             if not added:
                 self.children.append(Trie.Node(truncated_key, element))
 
-    def __init__(self):
+    def __init__(self, alphabet=string.ascii_lowercase):
         self.root = self.Node("")
 
-    def add(self, key, element):
-        self.root.insert(key,element)
-
-    def search(self, key):
+    def values(self, key):
+        """Return values matching a given key"""
         return self._search(self.root, key)
 
     def _search(self, node, key):
@@ -97,6 +82,14 @@ class Trie:
                     return self._search(child, key[p:])
         return set()
 
+    def __in__(self, key):
+        return self.search(key)
+
+    def __getitem__(self, key):
+        return self.values(key)[0]
+
+    def __setitem__(self, key, value):
+        return self.root.insert(key, value)
 
     def __str__(self):
         return str(self.root)

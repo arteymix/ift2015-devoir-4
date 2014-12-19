@@ -12,6 +12,7 @@ def get_reuters_stopwords():
     root = ElementTree.parse(os.path.join(os.path.dirname(__file__), 'data/stopwords.xml'))
     return set(word.text.lower() for word in root.iter('word'))
 
+
 class Document:
     """Représente un document"""
     __slots__ = ['title', 'body', 'date', 'terms']

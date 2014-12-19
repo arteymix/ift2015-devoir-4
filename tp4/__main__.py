@@ -4,13 +4,22 @@ import pydoc
 import random
 import re
 import time
+import string
 
-from compressed_trie import Trie
 from document import Document, get_reuters_documents, get_reuters_stopwords
+from compressed_trie import Trie
 
 documents = get_reuters_documents()
 stopwords = get_reuters_stopwords()
-comptrie = Trie.from_documents(documents)
+comptrie = Trie(string.ascii_lowercase)
+
+# remplit le trie avec les termes des documents
+begin = time.time()
+for doc in documents:
+    for term in doc.terms:
+        comptrie[term.lower()] = doc
+
+print('Trie compressé avec tous les termes pertinents de documents créé en {}s.'.format(time.time() - begin))
 
 print('{} documents chargés dans l\'index.'.format(len(documents)))
 print('Essayez un des termes suivants:', *random.choice(documents).terms)
@@ -24,7 +33,7 @@ while True:
         print() # print a \n
         break
 
-    terms = re.findall(r"[\w']+", query)
+    terms = re.findall(r"[\w']+", query.lower())
 
     terms = list(set(terms) - stopwords)
 
@@ -33,11 +42,11 @@ while True:
         continue
 
     print('Termes de la recherche:', ', '.join(terms) + '.')
-    
+
     begin = time.time()
 
     # on va chercher dans le trie les documents qui contiennent les termes recherchés
-    docsearch_vector = {term: comptrie.search(term) for term in terms}
+    docsearch_vector = {term: comptrie.values(term) for term in terms}
     alldocs_len = len(documents)
 
     # on assume que le tf de la requête vaut 1
