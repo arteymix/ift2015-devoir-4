@@ -5,14 +5,12 @@ import random
 import re
 import time
 
-from compressed_trie import Trie, make_trie_from_docs 
+from compressed_trie import Trie
 from document import Document, get_reuters_documents, get_reuters_stopwords
 
 documents = get_reuters_documents()
 stopwords = get_reuters_stopwords()
-comptrie = make_trie_from_docs(documents)
-
-
+comptrie = Trie.from_documents(documents)
 
 print('{} documents chargés dans l\'index.'.format(len(documents)))
 print('Essayez un des termes suivants:', *random.choice(documents).terms)
