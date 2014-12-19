@@ -32,7 +32,7 @@ class Document:
         return 0.5 + (0.5 * self.terms[term] / total) / (max(self.terms.values()) / total)
 
     @staticmethod
-    def inverse_document_frequency(term, documents):
+    def inverse_document_frequency(term, trie):
         """
         Calcule la fréquence d'un terme dans les autres documents.
 
@@ -42,20 +42,16 @@ class Document:
         Si le terme n'est pas dans aucun des documents, il va y avoir une
         division par zéro.
         """
-        matching_documents = [document for document in documents if term in document.terms]
-        return math.log(len(documents) / len(matching_documents))
+        matching_documents = trie.values(term)
+        return math.log(len(trie) / len(matching_documents))
 
-    @staticmethod
-    def fast_idf(all_doc_nb,matching_doc_nb):
-        return math.log(all_doc_nb / matching_doc_nb)
-
-    def tfidf(self, term, documents):
+    def tfidf(self, term, trie):
         """
         Calcul le tf-idf d'un terme pour un corpus de documents donné.
 
         Donne une division par zéro si le terme n'est pas dans le corpus.
         """
-        return self.term_frequency(term) * self.inverse_document_frequency(term, documents)
+        return self.term_frequency(term) * self.inverse_document_frequency(term, trie)
 
     def __cmp__(self, other):
         """

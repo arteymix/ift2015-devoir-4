@@ -46,11 +46,10 @@ while True:
 
     # on va chercher dans le trie les documents qui contiennent les termes recherchés
     docsearch_vector = {term: comptrie.values(term) for term in terms}
-    alldocs_len = len(documents)
 
     # on assume que le tf de la requête vaut 1
     try:
-        query_vector = {term: Document.fast_idf(alldocs_len, len(docs)) for term, docs in docsearch_vector.items()}
+        query_vector = {term: Document.inverse_document_frequency(term, comptrie) for term, docs in docsearch_vector.items()}
     except ZeroDivisionError:
         print('Le(s) terme(s) {} ne sont pas dans le corpus des documents.'.format(', '.join(terms)))
         continue
@@ -69,7 +68,7 @@ while True:
     begin = time.time()
 
     query_vector = np.array([query_vector[term] for term in terms])
-    documents_matrix = np.array([[(document.tfidf(term, documents) if term in document.terms else 0) for term in terms] for document in matching_documents])
+    documents_matrix = np.array([[(document.tfidf(term, comptrie) if term in document.terms else 0) for term in terms] for document in matching_documents])
 
     print('Vecteur de la requête:', query_vector, sep='\n')
     print('Matrice des documents:', documents_matrix, sep='\n')

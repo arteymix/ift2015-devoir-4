@@ -3,17 +3,11 @@ import time
 
 class Trie:
     class Node:
-        def __str__(self):
-            return "{key: " + self.key + ", val: " + str(self.value) + ", children: (" + '; '.join(str(child) for child in self.children) + ")}"
-
-        def __init__(self, key, element=None):
-            self.key=key
+        def __init__(self, key='', element=None):
+            self.key = key
             self.children = []
-            if element is not None:
-                self.value = set()
-                self.value.add(element)
-            else :
-                self.value = None
+            self.value = {element} if element is not None else element
+
         #retourne le nombre de match entre le debut de la clé du noeud et la string k en input
         #retourne 0 si aucun match, retourne 1 si la premiere lettre correspond mais différence
         def matchPrefix(self, k):
@@ -26,8 +20,8 @@ class Trie:
             return i
 
         def insert(self, key, element):
-            added = False
             assert self.matchPrefix(key) == len(self.key)
+            added = False
 
             if len(key) == len(self.key) :
                 if self.value :
@@ -51,13 +45,18 @@ class Trie:
                     child.key = child.key[p:]
                     n.children = [child,Trie.Node(truncated_key[p:], element)]
                     self.children.append(n)
-                    added=True
+                    added = True
                     break
+
             if not added:
                 self.children.append(Trie.Node(truncated_key, element))
 
+        def __str__(self):
+            return "{key: " + self.key + ", val: " + str(self.value) + ", children: (" + '; '.join(str(child) for child in self.children) + ")}"
+
     def __init__(self, alphabet=string.ascii_lowercase):
-        self.root = self.Node("")
+        self.root = Trie.Node()
+        self.size = 0
 
     def values(self, key):
         """Return values matching a given key"""
@@ -89,7 +88,11 @@ class Trie:
         return self.values(key)[0]
 
     def __setitem__(self, key, value):
-        return self.root.insert(key, value)
+        self.root.insert(key, value)
+        self.size += 1
+
+    def __len__(self):
+        return self.size
 
     def __str__(self):
         return str(self.root)
