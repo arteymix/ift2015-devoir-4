@@ -24,7 +24,6 @@ print('Trie compressé avec tous les termes pertinents de documents créé en {}
 print('{} documents chargés dans l\'index.'.format(len(documents)))
 print('Essayez un des termes suivants:', *random.choice(documents).terms)
 print('Pour quitter la boucle interactive, appuyez sur « CTRL-D ».')
-print('Une fois dans le pager, tapez sur « q » pour quitter.')
 
 while True:
     try:
@@ -51,17 +50,19 @@ while True:
 
     # on assume que le tf de la requête vaut 1
     try:
-        query_vector = {term: Document.fast_idf(alldocs_len,len(docs)) for term,docs in docsearch_vector.items()}
+        query_vector = {term: Document.fast_idf(alldocs_len, len(docs)) for term, docs in docsearch_vector.items()}
     except ZeroDivisionError:
         print('Le(s) terme(s) {} ne sont pas dans le corpus des documents.'.format(', '.join(terms)))
         continue
 
     # on prend seulement les documents qui ont une intersection entre la requête et leurs termes
     # on doit optimiser cette partie en triant les documents pour accélérer la recherche
-
     matching_documents = set()
     for doc in docsearch_vector.values():
         matching_documents = matching_documents.union(doc)
+
+    # on doit préserver l'ordre des documents
+    matching_document = list(matching_documents)
 
     print('{} document(s) trouvé(s) en {}s.'.format(len(matching_documents), time.time() - begin))
 
@@ -76,14 +77,16 @@ while True:
     query_vector_norm = np.linalg.norm(query_vector)
     documents_matrix_norm = np.linalg.norm(documents_matrix)
 
-
+    # calcul des produits scalaires et du produit des normes
     a = np.dot(documents_matrix, query_vector)
-    b= np.multiply(documents_matrix_norm, query_vector_norm)
-    # ranking listé par cosinus d'angle
+    b = np.multiply(documents_matrix_norm, query_vector_norm)
+
+    # calcul des ranking par cosinus d'angles (a / b)
     ranking = np.divide(a, b)
     print('Ranking calculés en {}s.'.format(time.time() - begin))
 
-    # trie du document le plus pertinent au moins pertinent
+    # trie du document le plus pertinent au moins pertinent en fonction des
+    # cosinus d'angles.
     matching_documents = sorted(zip(ranking, matching_documents), key=lambda l: l[0], reverse=True)
 
     while True:
@@ -91,17 +94,18 @@ while True:
         for index, (ranking, document) in enumerate(matching_documents):
             print(index, round(ranking, 5), document.title.lower().title(), sep='\t')
 
-        print(len(matching_documents), '-', 'Retour', sep='\t')
+        print('r', '-', 'Retour', sep='\t')
+        print('Une fois dans le pager, tapez sur « q » pour quitter.')
+
+        index = input('# ')
+        if index == 'r':
+            break
 
         try:
-            index = int(input('# '))
+            index = int(index)
         except ValueError:
-            print('Votre choix doit être un nombre.')
+            print('Votre choix doit être un nombre naturel.')
             continue
-
-        # l'utilisateur choisit « Retour »
-        if index == len(matching_documents):
-            break
 
         try:
             ranking, document = matching_documents[index]
@@ -110,5 +114,5 @@ while True:
             pydoc.pager(str(document))
 
         except IndexError:
-            print('Votre choix doit être un nombre entre 0 et {} inclusivement.'.format(len(matching_documents)))
+            print('Votre choix doit être un nombre entre 0 et {} inclusivement.'.format(len(matching_documents) - 1))
             continue
