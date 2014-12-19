@@ -1,14 +1,18 @@
 #Compressed Prefix Tree
 class Trie:
     class Node:
+    
         def __str__(self):
             return "{key: " + self.key + ", val: " + str(self.value) + ", children: (" + '; '.join(str(child) for child in self.children) + ")}"
+            
         def __init__(self, key, element=None):
             self.key=key
-            self.children = []
-            self.value = set()
+            self.children = [] 
             if element != None:
+                self.value = set()
                 self.value.add(element)
+            else :
+                self.value = None
         #retourne le nombre de match entre le debut de la clé du noeud et la string k en input
         #retourne 0 si aucun match, retourne 1 si la premiere lettre correspond mais différence
         def matchPrefix(self, k):
@@ -19,12 +23,19 @@ class Trie:
                 else:
                     break
             return i
+            
         def insert(self, key, element):
             added = False
             assert self.matchPrefix(key) == len(self.key)
+            
             if len(key) == len(self.key) :
-                self.value.add(element)
+                if self.value :
+                    self.value.add(element)
+                else :
+                    self.value = set()
+                    self.value.add(element)
                 return
+                
             truncated_key = key[len(self.key):]
             for child in self.children:
                 p = child.matchPrefix(truncated_key)
@@ -43,22 +54,35 @@ class Trie:
                     break
             if not added:
                 self.children.append(Trie.Node(truncated_key, element))
+                
     def __init__(self):
         self.root = self.Node("")
+        
     def add(self, key, element):
         self.root.insert(key,element)
+        
     def search(self, key):
         return self._search(self.root, key)
+        
     def _search(self, node, key):
+        """Trouve cherche une clé récursivement depuis un noeud donné.
+           Retourne False si l'élément n'est pas trouvé
+        """
         if node.key == key:
             return node.value
-        else :
+        else:
             for child in node.children:
-                if child.matchPrefix(key) > 0:
-                    return self._search(child, key)
+                p = child.matchPrefix(key)
+                if p == len(key):
+                    return child.value
+                elif p > 0:
+                    return self._search(child, key[p:])
         return False
+
+        
     def __str__(self):
         return str(self.root)
+        
 if __name__ == "__main__":
     t = Trie()
     t.add('asd', 27)
