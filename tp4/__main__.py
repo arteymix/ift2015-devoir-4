@@ -49,7 +49,7 @@ while True:
 
     # on assume que le tf de la requête vaut 1
     try:
-        query_vector = {term: Document.inverse_document_frequency(term, comptrie) for term, docs in docsearch_vector.items()}
+        query_vector = {term: 0.5 * Document.inverse_document_frequency(term, comptrie) for term, docs in docsearch_vector.items()}
     except ZeroDivisionError:
         print('Le(s) terme(s) {} ne sont pas dans le corpus des documents.'.format(', '.join(terms)))
         continue
