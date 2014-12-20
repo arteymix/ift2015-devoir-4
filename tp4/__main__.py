@@ -15,9 +15,11 @@ comptrie = Trie(string.ascii_lowercase)
 
 # remplit le trie avec les termes des documents
 begin = time.time()
-for doc in documents:
+for index, doc in enumerate(documents):
     for term in doc.terms:
         comptrie[term.lower()] = doc
+    if index % 100 == 0:
+        print('Loaded {} articles in the trie...'.format(index), '{}%'.format(round(index * 100 / len(documents), 2)), sep='\t')
 
 print('Trie compressé avec tous les termes pertinents de documents créé en {}s.'.format(time.time() - begin))
 

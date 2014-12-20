@@ -1,5 +1,6 @@
 import string
 import time
+import os
 
 class Trie:
     class Node:
@@ -8,20 +9,15 @@ class Trie:
             self.children = []
             self.value = {element} if element is not None else element
 
-        #retourne le nombre de match entre le debut de la clé du noeud et la string k en input
-        #retourne 0 si aucun match, retourne 1 si la premiere lettre correspond mais différence
-        def matchPrefix(self, k):
-            i = 0
-            for char in self.key:
-                if i < len(k) and char == k[i]:
-                    i += 1
-                else:
-                    break
-            return i
+        def common_prefix(self, k):
+            """
+            Retourne la longueur du préfix commun entre la clé interne et une
+            clé k fournie.
+            """
+            return os.path.commonprefix([self.key, k])
 
         def insert(self, key, element):
-            assert self.matchPrefix(key) == len(self.key)
-            added = False
+            assert len(self.common_prefix(key)) == len(self.key)
 
             if len(key) == len(self.key) :
                 if self.value :
@@ -33,23 +29,20 @@ class Trie:
 
             truncated_key = key[len(self.key):]
             for child in self.children:
-                p = child.matchPrefix(truncated_key)
+                p = len(child.common_prefix(truncated_key))
                 #continuer a iterer si le match == 0
                 if p == len(child.key) :
                     child.insert(truncated_key,element)
-                    added = True
-                    break
+                    return
                 elif p > 0:
                     self.children.remove(child)
                     n = Trie.Node(child.key[0:p])
                     child.key = child.key[p:]
                     n.children = [child,Trie.Node(truncated_key[p:], element)]
                     self.children.append(n)
-                    added = True
-                    break
+                    return
 
-            if not added:
-                self.children.append(Trie.Node(truncated_key, element))
+            self.children.append(Trie.Node(truncated_key, element))
 
         def __str__(self):
             return "{key: " + self.key + ", val: " + str(self.value) + ", children: (" + '; '.join(str(child) for child in self.children) + ")}"
@@ -72,7 +65,7 @@ class Trie:
                 return node.value
         else:
             for child in node.children:
-                p = child.matchPrefix(key)
+                p = len(child.common_prefix(key))
                 if p == len(key):
                     if child.value is not None :
                         return child.value

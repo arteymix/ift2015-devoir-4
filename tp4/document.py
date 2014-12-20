@@ -12,7 +12,6 @@ def get_reuters_stopwords():
     root = ElementTree.parse(os.path.join(os.path.dirname(__file__), 'data/stopwords.xml'))
     return set(word.text.lower() for word in root.iter('word'))
 
-
 class Document:
     """Représente un document"""
     __slots__ = ['title', 'body', 'date', 'terms']
@@ -52,13 +51,6 @@ class Document:
         Donne une division par zéro si le terme n'est pas dans le corpus.
         """
         return self.term_frequency(term) * self.inverse_document_frequency(term, trie)
-
-    def __cmp__(self, other):
-        """
-        Compare ce document avec un autre document afin de pouvoir trier une
-        liste de documents.
-        """
-        raise NotImplementedError
 
     def __str__(self):
         # rendu du document
