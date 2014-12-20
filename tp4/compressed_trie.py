@@ -1,9 +1,14 @@
 import string
-import time
 import os
 
 class Trie:
+    """
+    Implémentation de trie par arbre.
+    """
     class Node:
+        """
+        Noeud contenant un caractère de la trie.
+        """
         def __init__(self, key='', element=None):
             self.key = key
             self.children = []
@@ -19,10 +24,10 @@ class Trie:
         def insert(self, key, element):
             assert len(self.common_prefix(key)) == len(self.key)
 
-            if len(key) == len(self.key) :
-                if self.value :
+            if len(key) == len(self.key):
+                if self.value:
                     self.value.add(element)
-                else :
+                else:
                     self.value = set()
                     self.value.add(element)
                 return
@@ -31,21 +36,18 @@ class Trie:
             for child in self.children:
                 p = len(child.common_prefix(truncated_key))
                 #continuer a iterer si le match == 0
-                if p == len(child.key) :
-                    child.insert(truncated_key,element)
+                if p == len(child.key):
+                    child.insert(truncated_key, element)
                     return
                 elif p > 0:
                     self.children.remove(child)
                     n = Trie.Node(child.key[0:p])
                     child.key = child.key[p:]
-                    n.children = [child,Trie.Node(truncated_key[p:], element)]
+                    n.children = [child, Trie.Node(truncated_key[p:], element)]
                     self.children.append(n)
                     return
 
             self.children.append(Trie.Node(truncated_key, element))
-
-        def __str__(self):
-            return "{key: " + self.key + ", val: " + str(self.value) + ", children: (" + '; '.join(str(child) for child in self.children) + ")}"
 
     def __init__(self, alphabet=string.ascii_lowercase):
         self.root = Trie.Node()
@@ -60,22 +62,22 @@ class Trie:
         Trouve cherche une clé récursivement depuis un noeud donné.
         Retourne False si l'élément n'est pas trouvé
         """
-        if node.key == key :
+        if node.key == key:
             if node.value is not None:
                 return node.value
         else:
             for child in node.children:
                 p = len(child.common_prefix(key))
                 if p == len(key):
-                    if child.value is not None :
+                    if child.value is not None:
                         return child.value
-                    else : break
+                    else: break
                 elif p > 0:
                     return self._search(child, key[p:])
         return set()
 
     def __in__(self, key):
-        return self.search(key)
+        return len(self.values(key)) > 0
 
     def __getitem__(self, key):
         return self.values(key)[0]
@@ -89,15 +91,3 @@ class Trie:
 
     def __str__(self):
         return str(self.root)
-"""
-if __name__ == "__main__":
-    t = Trie()
-    t.add('asd', 27)
-    t.add('asdf', 28)
-    t.add('g', 10)
-    t.add('asdee', 21)
-    t.add('asdeh', 39)
-    t.add('asdehh', 20)
-    t.add('ga', 20)
-    t.add('gagasd', 2)
-    print(t)"""
